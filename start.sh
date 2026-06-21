@@ -3,6 +3,33 @@ set -e
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+setup_java() {
+  if [ -z "$JAVA_HOME" ]; then
+    for jdk in /opt/jdk-17* /opt/jdk-21* /opt/zulu* /usr/lib/jvm/java-17* /usr/lib/jvm/java-21*; do
+      if [ -d "$jdk" ]; then
+        export JAVA_HOME="$jdk"
+        break
+      fi
+    done
+  fi
+  export PATH="$JAVA_HOME/bin:$PATH"
+  if [ -d "/opt/apache-maven-3."* ]; then
+    export PATH="$(ls -d /opt/apache-maven-3.* | sort -V | tail -1)/bin:$PATH"
+  fi
+}
+
+setup_node() {
+  for node_dir in /opt/node-v20* /opt/node-v22*; do
+    if [ -d "$node_dir" ]; then
+      export PATH="$node_dir/bin:$PATH"
+      break
+    fi
+  done
+}
+
+setup_java
+setup_node
+
 echo "=== 编译后端 ==="
 cd "$PROJECT_DIR/backend"
 mvn package -DskipTests -q
@@ -22,7 +49,7 @@ if [ ! -d "node_modules" ]; then
   npm install --silent
 fi
 
-npm run dev -- --host 0.0.0.0 &
+npx vite --host 0.0.0.0 &
 FRONTEND_PID=$!
 echo "前端 PID: $FRONTEND_PID"
 
